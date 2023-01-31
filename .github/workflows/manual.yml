@@ -20,31 +20,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Get Email
+        id: test
+        uses: evvanErb/get-github-email-by-username-action@v1.25
+        with:
+          github-username: "${{ github.triggering_actor }}"
+          
+      - name: Print the found email
+        run: echo "The email is ${{ steps.test.outputs.email }}"
+    
       - uses: actions/checkout@v3
-      - uses: fregante/setup-git-user@v1
+      - run: git config --global user.email ${{ steps.test.outputs.email }}
+      - run: git config --global user.name ${{ github.triggering_actor }}
 
       - uses: actions/setup-node@master
         with:
           node-version: 16.x
         env:
           RUNNER_TEMP: /tmp
-          
-      - name: Get Email
-        id: test
-        uses: evvanErb/get-github-email-by-username-action@v1.25
-        with:
-          github-username: "${{ github.triggering_actor }}" # This is the input username
-          token: 'token' # This is an optional input of a PAT to use a more reliable way to get a user's email
-          
-      # Use the output from the `test` step
-      - name: Print the found email
-        run: echo "The email is ${{ steps.test.outputs.email }}"
-          
-      - name: Show GitHub context   
-        env: 
-          GITHUB_CONTEXT: ${{ toJson(github) }}   
-        run: echo "$GITHUB_CONTEXT"
-        shell: bash
 
       - name: Run Releasy
         run: npx releasy ${{ github.event.inputs.release }} --stable --silent
