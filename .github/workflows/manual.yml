@@ -27,7 +27,7 @@ jobs:
           github-username: "${{ github.triggering_actor }}"
           
       - name: Print the found email
-        run: echo "The email is ${{ steps.test.outputs }}"
+        run: echo "The email is ${{ toJSON(steps.test.outputs) }}"
     
       - uses: actions/checkout@v3
 
@@ -39,8 +39,8 @@ jobs:
 
       - name: Run Releasy
         run: | 
-            git config --global user.email ${{ steps.test.outputs.email }}
-            git config --global user.name ${{ github.triggering_actor }}
+            git config --global user.email "${{ steps.test.outputs.email }}"
+            git config --global user.name "${{ github.triggering_actor }}"
             npx releasy ${{ github.event.inputs.release }} --stable --silent
 
       - name: Release selected
