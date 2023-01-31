@@ -27,11 +27,9 @@ jobs:
           github-username: "${{ github.triggering_actor }}"
           
       - name: Print the found email
-        run: echo "The email is ${{ steps.test.outputs.email }}"
+        run: echo "The email is ${{ steps.test.outputs }}"
     
       - uses: actions/checkout@v3
-      - run: git config --global user.email ${{ steps.test.outputs.email }}
-      - run: git config --global user.name ${{ github.triggering_actor }}
 
       - uses: actions/setup-node@master
         with:
@@ -40,9 +38,10 @@ jobs:
           RUNNER_TEMP: /tmp
 
       - name: Run Releasy
-        run: npx releasy ${{ github.event.inputs.release }} --stable --silent
-        env:
-          GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+        run: | 
+            git config --global user.email ${{ steps.test.outputs.email }}
+            git config --global user.name ${{ github.triggering_actor }}
+            npx releasy ${{ github.event.inputs.release }} --stable --silent
 
       - name: Release selected
         run: echo "${{ github.event.inputs.release }}"
