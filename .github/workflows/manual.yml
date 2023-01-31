@@ -35,6 +35,8 @@ jobs:
 
       - name: Run Releasy
         run: npx releasy ${{ github.event.inputs.release }} --stable --silent
+        with:
+          credentials: ${{secrets.GIT_CREDENTIALS}}
 
       - name: Release selected
         run: echo "${{ github.event.inputs.release }}"
