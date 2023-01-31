@@ -16,9 +16,20 @@ on:
           - major:beta
 
 jobs:
-  greet:
+  manual_release:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-node@master
+        with:
+          node-version: 16.x
+        env:
+          RUNNER_TEMP: /tmp
+
+      - name: Run Releasy
+        run: npx releasy ${{ github.event.inputs.release }} --stable
+
       - name: Release selected
         run: echo "${{ github.event.inputs.release }}"
