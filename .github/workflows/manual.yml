@@ -45,6 +45,7 @@ jobs:
         run: echo "${{ github.event.inputs.tag }}"
 
       - name: Run Releasy
+        shell: bash
         run: | 
             git config --global user.email "${{ steps.github_email.outputs.email }}"
             git config --global user.name "${{ github.triggering_actor }}"
