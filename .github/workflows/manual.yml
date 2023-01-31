@@ -11,9 +11,14 @@ on:
           - patch
           - minor
           - major
-          - patch:beta
-          - minor:beta
-          - major:beta
+      tag:
+        type: choice
+        required: true
+        description: Tag version
+        options:
+          - stable
+          - beta
+          - alpha
 
 jobs:
   manual_release:
@@ -21,14 +26,11 @@ jobs:
 
     steps:
       - name: Get Email
-        id: test
+        id: github_email
         uses: evvanErb/get-github-email-by-username-action@v1.25
         with:
           github-username: "${{ github.triggering_actor }}"
-          
-      - name: Print the found email
-        run: echo "The email is ${{ toJSON(steps.test.outputs) }}"
-    
+            
       - uses: actions/checkout@v3
 
       - uses: actions/setup-node@master
@@ -37,11 +39,13 @@ jobs:
         env:
           RUNNER_TEMP: /tmp
 
+      - name: Release selected
+        run: echo "${{ github.event.inputs.release }}"
+
       - name: Run Releasy
         run: | 
-            git config --global user.email "${{ steps.test.outputs.email }}"
+            git config --global user.email "${{ steps.github_email.outputs.email }}"
             git config --global user.name "${{ github.triggering_actor }}"
             npx releasy ${{ github.event.inputs.release }} --stable --silent
 
-      - name: Release selected
-        run: echo "${{ github.event.inputs.release }}"
+
