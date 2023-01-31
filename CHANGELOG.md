@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.8-beta] - 2023-01-31
+
 ## [0.0.7-beta] - 2023-01-31
 
 ## [0.0.6-beta] - 2023-01-31
@@ -30,7 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release.
 
 
-[Unreleased]: https://github.com/wagnerlduarte/releasy-action/compare/v0.0.7-beta...HEAD
+[Unreleased]: https://github.com/wagnerlduarte/releasy-action/compare/v0.0.8-beta...HEAD
+[0.0.8-beta]: https://github.com/wagnerlduarte/releasy-action/compare/v0.0.7-beta...v0.0.8-beta
 [0.0.7-beta]: https://github.com/wagnerlduarte/releasy-action/compare/v0.0.6-beta...v0.0.7-beta
 [0.0.6-beta]: https://github.com/wagnerlduarte/releasy-action/compare/v0.0.5...v0.0.6-beta
 [0.0.5]: https://github.com/wagnerlduarte/releasy-action/compare/v0.0.5-beta...v0.0.5
