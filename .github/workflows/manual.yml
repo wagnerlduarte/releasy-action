@@ -31,5 +31,8 @@ jobs:
       - name: Run Releasy
         run: npx releasy ${{ github.event.inputs.release }} --stable
 
+      - name: Confirm Run Releasy
+        run: echo yes
+
       - name: Release selected
         run: echo "${{ github.event.inputs.release }}"
