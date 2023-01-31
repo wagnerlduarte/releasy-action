@@ -31,8 +31,6 @@ jobs:
           github-username: "${{ github.triggering_actor }}"
             
       - uses: actions/checkout@v3
-      
-      - uses: fregante/setup-git-user@v1
 
       - uses: actions/setup-node@master
         with:
@@ -47,5 +45,7 @@ jobs:
         run: echo "${{ github.event.inputs.tag }}"
 
       - name: Run Releasy
-        run: npx releasy ${{ github.event.inputs.release }} ${{ github.event.inputs.tag == 'stable' && '--stable' || '' }} --silent
-
+        run: | 
+            git config --global user.email "${{ steps.github_email.outputs.email }}"
+            git config --global user.name "${{ github.triggering_actor }}"
+            npx releasy ${{ github.event.inputs.release }} ${{ github.event.inputs.tag == 'stable' && '--stable' || '' }} --silent
