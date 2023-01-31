@@ -21,17 +21,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+      - uses: fregante/setup-git-token@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-node@master
         with:
           node-version: 16.x
         env:
           RUNNER_TEMP: /tmp
-          
-      - name: Dump GitHub context
-        env:
-          GITHUB_SECRETS: ${{ toJson(secrets) }}
-        run: echo "$GITHUB_SECRETS"
 
       - name: Run Releasy
         run: npx releasy ${{ github.event.inputs.release }} --stable --silent
