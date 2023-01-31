@@ -29,6 +29,17 @@ jobs:
         env:
           RUNNER_TEMP: /tmp
           
+      - name: Get Email
+        id: test
+        uses: evvanErb/get-github-email-by-username-action@v1.25
+        with:
+          github-username: "${{ github.triggering_actor }}" # This is the input username
+          token: 'token' # This is an optional input of a PAT to use a more reliable way to get a user's email
+          
+      # Use the output from the `test` step
+      - name: Print the found email
+        run: echo "The email is ${{ steps.test.outputs.email }}"
+          
       - name: Show GitHub context   
         env: 
           GITHUB_CONTEXT: ${{ toJson(github) }}   
