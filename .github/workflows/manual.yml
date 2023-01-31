@@ -45,8 +45,11 @@ jobs:
         run: echo "${{ github.event.inputs.tag }}"
 
       - name: Run Releasy
-        shell: bash
+        id: release
         run: | 
             git config --global user.email "${{ steps.github_email.outputs.email }}"
             git config --global user.name "${{ github.triggering_actor }}"
             npx releasy ${{ github.event.inputs.release }} ${{ github.event.inputs.tag == 'stable' && '--stable' || '' }} --silent
+        
+      - name: Check Releasy
+        run: "echo ${{ toJSON(steps.release.outputs) }}"
