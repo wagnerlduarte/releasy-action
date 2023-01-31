@@ -29,10 +29,7 @@ jobs:
           RUNNER_TEMP: /tmp
 
       - name: Run Releasy
-        run: npx releasy ${{ github.event.inputs.release }} --stable
-
-      - name: Confirm Run Releasy
-        run: echo yes
+        run: npx releasy ${{ github.event.inputs.release }} --stable --silent
 
       - name: Release selected
         run: echo "${{ github.event.inputs.release }}"
