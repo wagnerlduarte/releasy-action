@@ -53,4 +53,4 @@ jobs:
             npx releasy ${{ github.event.inputs.release }} ${{ github.event.inputs.tag == 'stable' && '--stable' || '' }} --silent
         
       - name: Check Releasy
-        run: "echo ${{ failure() }}"
+        run: "echo ${{ steps.release.outcome }}"
