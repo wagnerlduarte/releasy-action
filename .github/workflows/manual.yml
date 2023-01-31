@@ -20,9 +20,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: de-vri-es/setup-git-credentials@v2
         with:
           credentials: ${{secrets.GIT_CREDENTIALS}}
+
+      - uses: actions/checkout@v3
 
       - uses: actions/setup-node@master
         with:
@@ -35,8 +37,6 @@ jobs:
 
       - name: Run Releasy
         run: npx releasy ${{ github.event.inputs.release }} --stable --silent
-        with:
-          credentials: ${{secrets.GIT_CREDENTIALS}}
 
       - name: Release selected
         run: echo "${{ github.event.inputs.release }}"
