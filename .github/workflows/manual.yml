@@ -28,6 +28,10 @@ jobs:
         env:
           RUNNER_TEMP: /tmp
 
+      - uses: mheap/github-action-required-labels@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Run Releasy
         run: npx releasy ${{ github.event.inputs.release }} --stable --silent
 
