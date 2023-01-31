@@ -44,8 +44,22 @@ jobs:
       - name: Tag selected
         run: echo "${{ github.event.inputs.tag }}"
 
+      - name: Temporarily disable "include administrators" branch protection
+        uses: benjefferies/branch-protection-bot@master
+        if: always()
+        with:
+          access_token: ${{ secrets.ACCESS_TOKEN }}
+          branch: ${{ github.event.repository.default_branch }}
+
       - name: Run Releasy
         run: | 
             git config --global user.email "${{ steps.github_email.outputs.email }}"
             git config --global user.name "${{ github.triggering_actor }}"
             npx releasy ${{ github.event.inputs.release }} ${{ github.event.inputs.tag == 'stable' && '--stable' || '' }} --silent
+            
+      - name: Enable "include administrators" branch protection
+        uses: benjefferies/branch-protection-bot@master
+        if: always()  # Force to always run this step to ensure "include administrators" is always turned back on
+        with:
+          access_token: ${{ secrets.ACCESS_TOKEN }}
+          branch: ${{ github.event.repository.default_branch }}
