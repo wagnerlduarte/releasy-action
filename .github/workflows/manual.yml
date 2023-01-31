@@ -46,6 +46,7 @@ jobs:
 
       - name: Run Releasy
         id: release
+        continue-on-error: true
         run: | 
             git config --global user.email "${{ steps.github_email.outputs.email }}"
             git config --global user.name "${{ github.triggering_actor }}"
