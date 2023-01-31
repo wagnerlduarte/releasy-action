@@ -18,7 +18,6 @@ on:
         options:
           - stable
           - beta
-          - alpha
 
 jobs:
   manual_release:
@@ -41,11 +40,14 @@ jobs:
 
       - name: Release selected
         run: echo "${{ github.event.inputs.release }}"
+        
+      - name: Tag selected
+        run: echo "${{ github.event.inputs.tag }}"
 
       - name: Run Releasy
         run: | 
             git config --global user.email "${{ steps.github_email.outputs.email }}"
             git config --global user.name "${{ github.triggering_actor }}"
-            npx releasy ${{ github.event.inputs.release }} --stable --silent
+            npx releasy ${{ github.event.inputs.release }} ${{ (github.event.inputs.release == 'stable' && '--stable') || '' }} 
 
 
