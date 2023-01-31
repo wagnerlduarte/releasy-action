@@ -31,10 +31,6 @@ jobs:
           github-username: "${{ github.triggering_actor }}"
             
       - uses: actions/checkout@v3
-        with:
-            fetch-depth: 0
-            ref: main
-            token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-node@master
         with:
@@ -50,6 +46,6 @@ jobs:
 
       - name: Run Releasy
         run: | 
-            git config --local user.name github-actions
-            git config --local user.email github-actions@github.com
+            git config --global user.email "${{ steps.github_email.outputs.email }}"
+            git config --global user.name "${{ github.triggering_actor }}"
             npx releasy ${{ github.event.inputs.release }} ${{ github.event.inputs.tag == 'stable' && '--stable' || '' }} --silent
