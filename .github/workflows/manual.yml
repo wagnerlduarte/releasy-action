@@ -1,28 +1,24 @@
-name: Mixed inputs
+name: Manual Release
 
 on:
   workflow_dispatch:
     inputs:
-      name:
+      release:
         type: choice
-        description: Who to greet
-        options:
-          - monalisa
-          - cschleiden
-      message:
         required: true
-        description: Message
-      use-emoji:
-        type: boolean
-        description: Include  emojis
-      environment:
-        type: environment
-        description: Environment
+        description: Release version
+        options:
+          - patch
+          - minor
+          - major
+          - patch:beta
+          - minor:beta
+          - major:beta
 
 jobs:
   greet:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Send greeting
-        run: echo "${{ github.event.inputs.message }} ${{ fromJSON('["", ""]')[github.event.inputs.use-emoji == 'true'] }} ${{ github.event.inputs.name }}"
+      - name: Release selected
+        run: echo "${{ github.event.inputs.release }}"
