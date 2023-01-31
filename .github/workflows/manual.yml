@@ -28,6 +28,12 @@ jobs:
           node-version: 16.x
         env:
           RUNNER_TEMP: /tmp
+          
+      - name: Show GitHub context   
+        env: 
+          GITHUB_CONTEXT: ${{ toJson(github) }}   
+        run: echo "$GITHUB_CONTEXT"
+        shell: bash
 
       - name: Run Releasy
         run: npx releasy ${{ github.event.inputs.release }} --stable --silent
