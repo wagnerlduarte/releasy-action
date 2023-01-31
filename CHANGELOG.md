@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.1] - 2023-01-31
+
 ### Added
 
 - Initial release.
+
+
+[Unreleased]: https://github.com/wagnerlduarte/releasy-action/compare/v0.0.1...HEAD
+[0.0.1]: https://github.com/wagnerlduarte/releasy-action/compare/v0.0.0...v0.0.1
