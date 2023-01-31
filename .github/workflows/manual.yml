@@ -50,6 +50,6 @@ jobs:
 
       - name: Run Releasy
         run: | 
-            git config --global user.email "${{ steps.github_email.outputs.email }}"
-            git config --global user.name "${{ github.triggering_actor }}"
+            git config --local user.name github-actions
+            git config --local user.email github-actions@github.com
             npx releasy ${{ github.event.inputs.release }} ${{ github.event.inputs.tag == 'stable' && '--stable' || '' }} --silent
