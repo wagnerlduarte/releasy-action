@@ -1,3 +1,5 @@
+name: Manual Tag and Release
+
 on:
   workflow_dispatch:
     inputs:
@@ -10,6 +12,8 @@ on:
           - minor
           - major
           - prerelease
+        default: patch
+
       tag:
         type: choice
         required: true
@@ -17,6 +21,19 @@ on:
         options:
           - stable
           - beta
+        default: beta
+
+      build_api:
+        type: boolean
+        required: false
+        description: Generate tag for API
+        default: true
+
+      build_wrk:
+        type: boolean
+        required: false
+        description: Generate tag for Worker
+        default: true
 
 jobs:
   manual_tag_release:
@@ -33,53 +50,60 @@ jobs:
         with:
           node-version: 16.x
 
-      - name: Fetch tags
+      - name: Fetch all tags
         run: git fetch --tags
 
-      - name: Get latest tag based on type
+      - name: Get latest matching tag
         id: get_tag
         run: |
-          TAG_TYPE=${{ github.event.inputs.tag }}
+          TAG_TYPE="${{ github.event.inputs.tag }}"
+          TAG_PATTERN="v[0-9]*.[0-9]*.[0-9]*"
+
           if [ "$TAG_TYPE" = "beta" ]; then
-            PATTERN="*-beta*"
-          else
-            PATTERN="v*"
+            TAG_PATTERN="${TAG_PATTERN}-beta*"
           fi
-          TAG=$(git tag --list "$PATTERN" | sort -V | tail -n1)
-          echo "latest_tag=${TAG:-v0.0.0}" >> $GITHUB_OUTPUT
+
+          LAST_TAG=$(git tag --list "$TAG_PATTERN" | sort -V | tail -n 1)
+          [ -z "$LAST_TAG" ] && LAST_TAG="v0.0.0"
+          echo "latest_tag=$LAST_TAG" >> $GITHUB_OUTPUT
 
       - name: Bump version
         id: bump_version
         run: |
-          LATEST=${{ steps.get_tag.outputs.latest_tag }}
-          RELEASE_TYPE=${{ github.event.inputs.release }}
-          TAG_TYPE=${{ github.event.inputs.tag }}
+          LATEST="${{ steps.get_tag.outputs.latest_tag }}"
+          RELEASE_TYPE="${{ github.event.inputs.release }}"
+
           BASE_VERSION=$(echo "$LATEST" | sed 's/^v//' | sed 's/-.*//')
+          echo "{ \"version\": \"$BASE_VERSION\" }" > package.json
 
           if [ "$RELEASE_TYPE" = "prerelease" ]; then
-            BASE_TAG="v$BASE_VERSION"
-            if [ "$TAG_TYPE" = "beta" ]; then
-              BASE_TAG="${BASE_TAG}-beta"
-            fi
-
-            COUNT=$(git tag --list "${BASE_TAG}.*" | wc -l)
-            NEW_VERSION="${BASE_TAG}.$((COUNT + 1))"
+            NEW_VERSION=$(npm version prerelease --preid=beta --no-git-tag-version)
           else
-            echo "{ \"version\": \"$BASE_VERSION\" }" > package.json
-            VERSION=$(npm version "$RELEASE_TYPE" --no-git-tag-version)
-            VERSION=$(echo $VERSION | sed 's/^v//')
-
-            if [ "$TAG_TYPE" = "beta" ]; then
-              NEW_VERSION="v$VERSION-beta"
-            else
-              NEW_VERSION="v$VERSION"
-            fi
+            NEW_VERSION=$(npm version $RELEASE_TYPE --no-git-tag-version)
           fi
 
+          NEW_VERSION=$(echo "$NEW_VERSION" | sed 's/^v//')
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
-      - name: Create tag and push
+      - name: Create tags for selected builds
         run: |
           VERSION=${{ steps.bump_version.outputs.new_version }}
-          git tag "$VERSION"
-          git push origin "$VERSION"
+          TAG_TYPE=${{ github.event.inputs.tag }}
+
+          declare -a TARGETS=()
+          if [ "${{ github.event.inputs.build_api }}" == "true" ]; then
+            TARGETS+=("api")
+          fi
+          if [ "${{ github.event.inputs.build_wrk }}" == "true" ]; then
+            TARGETS+=("wrk")
+          fi
+
+          for BUILD in "${TARGETS[@]}"; do
+            TAG="v$VERSION-$BUILD"
+            if [ "$TAG_TYPE" = "beta" ]; then
+              TAG="${TAG}-beta"
+            fi
+            git tag "$TAG"
+            git push origin "$TAG"
+            echo "Pushed tag: $TAG"
+          done
