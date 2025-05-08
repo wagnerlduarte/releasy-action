@@ -1,5 +1,3 @@
-name: Manual Tag and Release
-
 on:
   workflow_dispatch:
     inputs:
@@ -11,6 +9,7 @@ on:
           - patch
           - minor
           - major
+          - prerelease
       tag:
         type: choice
         required: true
@@ -37,43 +36,50 @@ jobs:
       - name: Fetch tags
         run: git fetch --tags
 
-      - name: Get latest tag by type
+      - name: Get latest tag based on type
         id: get_tag
         run: |
           TAG_TYPE=${{ github.event.inputs.tag }}
-      
           if [ "$TAG_TYPE" = "beta" ]; then
-            TAG=$(git tag --list "v*-beta" --sort=-creatordate | head -n 1)
+            PATTERN="*-beta*"
           else
-            TAG=$(git tag --list "v*" | grep -v "beta" | sort -V | tail -n 1)
+            PATTERN="v*"
           fi
-      
-          if [ -z "$TAG" ]; then
-            TAG="v0.0.0"
-          fi
-      
-          echo "latest_tag=$TAG"
-          echo "latest_tag=$TAG" >> $GITHUB_OUTPUT
+          TAG=$(git tag --list "$PATTERN" | sort -V | tail -n1)
+          echo "latest_tag=${TAG:-v0.0.0}" >> $GITHUB_OUTPUT
 
-      - name: Bump version based on latest tag
+      - name: Bump version
         id: bump_version
         run: |
           LATEST=${{ steps.get_tag.outputs.latest_tag }}
           RELEASE_TYPE=${{ github.event.inputs.release }}
+          TAG_TYPE=${{ github.event.inputs.tag }}
           BASE_VERSION=$(echo "$LATEST" | sed 's/^v//' | sed 's/-.*//')
-          
-          echo "{ \"version\": \"$BASE_VERSION\" }" > package.json
-          NEW_VERSION=$(npm version $RELEASE_TYPE --no-git-tag-version)
-          NEW_VERSION=$(echo $NEW_VERSION | sed 's/^v//')
+
+          if [ "$RELEASE_TYPE" = "prerelease" ]; then
+            BASE_TAG="v$BASE_VERSION"
+            if [ "$TAG_TYPE" = "beta" ]; then
+              BASE_TAG="${BASE_TAG}-beta"
+            fi
+
+            COUNT=$(git tag --list "${BASE_TAG}.*" | wc -l)
+            NEW_VERSION="${BASE_TAG}.$((COUNT + 1))"
+          else
+            echo "{ \"version\": \"$BASE_VERSION\" }" > package.json
+            VERSION=$(npm version "$RELEASE_TYPE" --no-git-tag-version)
+            VERSION=$(echo $VERSION | sed 's/^v//')
+
+            if [ "$TAG_TYPE" = "beta" ]; then
+              NEW_VERSION="v$VERSION-beta"
+            else
+              NEW_VERSION="v$VERSION"
+            fi
+          fi
+
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
       - name: Create tag and push
         run: |
           VERSION=${{ steps.bump_version.outputs.new_version }}
-          TAG_TYPE=${{ github.event.inputs.tag }}
-          TAG="v$VERSION"
-          if [ "$TAG_TYPE" = "beta" ]; then
-            TAG="${TAG}-beta"
-          fi
-          git tag "$TAG"
-          git push origin "$TAG"
+          git tag "$VERSION"
+          git push origin "$VERSION"
