@@ -1,0 +1,67 @@
+name: Manual Tag and Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        type: choice
+        required: true
+        description: Release type (version bump)
+        options:
+          - patch
+          - minor
+          - major
+      tag:
+        type: choice
+        required: true
+        description: Tag type
+        options:
+          - stable
+          - beta
+
+jobs:
+  manual_tag_release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Git User
+        uses: fregante/setup-git-user@v1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.x
+
+      - name: Fetch tags
+        run: git fetch --tags
+
+      - name: Get latest tag or fallback to v0.0.0
+        id: get_tag
+        run: |
+          TAG=$(git describe --tags $(git rev-list --tags --max-count=1) 2>/dev/null || echo "v0.0.0")
+          echo "latest_tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Bump version based on latest tag
+        id: bump_version
+        run: |
+          LATEST=${{ steps.get_tag.outputs.latest_tag }}
+          RELEASE_TYPE=${{ github.event.inputs.release }}
+          BASE_VERSION=$(echo "$LATEST" | sed 's/^v//' | sed 's/-.*//')
+          
+          echo "{ \"version\": \"$BASE_VERSION\" }" > package.json
+          NEW_VERSION=$(npm version $RELEASE_TYPE --no-git-tag-version)
+          NEW_VERSION=$(echo $NEW_VERSION | sed 's/^v//')
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create tag and push
+        run: |
+          VERSION=${{ steps.bump_version.outputs.new_version }}
+          TAG_TYPE=${{ github.event.inputs.tag }}
+          TAG="v$VERSION"
+          if [ "$TAG_TYPE" = "beta" ]; then
+            TAG="${TAG}-beta"
+          fi
+          git tag "$TAG"
+          git push origin "$TAG"
