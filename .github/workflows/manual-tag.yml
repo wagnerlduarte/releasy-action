@@ -37,10 +37,22 @@ jobs:
       - name: Fetch tags
         run: git fetch --tags
 
-      - name: Get latest tag or fallback to v0.0.0
+      - name: Get latest tag by type
         id: get_tag
         run: |
-          TAG=$(git describe --tags $(git rev-list --tags --max-count=1) 2>/dev/null || echo "v0.0.0")
+          TAG_TYPE=${{ github.event.inputs.tag }}
+      
+          if [ "$TAG_TYPE" = "beta" ]; then
+            TAG=$(git tag --list "v*-beta" --sort=-creatordate | head -n 1)
+          else
+            TAG=$(git tag --list "v*" | grep -v "beta" | sort -V | tail -n 1)
+          fi
+      
+          if [ -z "$TAG" ]; then
+            TAG="v0.0.0"
+          fi
+      
+          echo "latest_tag=$TAG"
           echo "latest_tag=$TAG" >> $GITHUB_OUTPUT
 
       - name: Bump version based on latest tag
