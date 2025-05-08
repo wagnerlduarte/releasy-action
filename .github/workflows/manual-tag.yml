@@ -103,7 +103,7 @@ jobs:
             if [ "$TAG_TYPE" = "beta" ]; then
               TAG="${TAG}-beta"
             fi
-            git tag "$TAG" -a 'reset'
+            git tag -a "$TAG" -m "reset"
             git push origin "$TAG"
             echo "Pushed tag: $TAG"
           done
