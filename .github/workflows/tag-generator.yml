@@ -109,7 +109,7 @@ jobs:
             if [ "$TAG_TYPE" = "beta" ]; then
               TAG="${TAG}-beta"
               if [ "${{ github.event.inputs.is_reset }}" = "true" ]; then
-                TAG="${TAG}-beta-reset"
+                TAG="${TAG}-reset"
               fi
             fi
             git tag "$TAG"
