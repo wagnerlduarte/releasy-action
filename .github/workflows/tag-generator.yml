@@ -25,11 +25,6 @@ on:
         required: false
         description: Generate tag for Worker
         default: true
-      is_reset:
-        type: boolean
-        required: false
-        description: Indicates whether the tag is from a beta reset
-        default: false
 
   workflow_call:
     inputs:
@@ -61,7 +56,7 @@ jobs:
       TAG_TYPE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || inputs.tag }}
       BUILD_API: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build_api || inputs.build_api }}
       BUILD_WRK: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build_wrk || inputs.build_wrk }}
-      IS_RESET: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.is_reset || inputs.is_reset }}
+      IS_RESET: ${{ github.event_name == 'workflow_dispatch' && false || inputs.is_reset }}
 
     steps:
       - uses: actions/checkout@v3
