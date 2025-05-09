@@ -23,7 +23,7 @@ jobs:
           git push origin beta --force
 
       - name: Trigger tag generator workflow
-        uses: ./.github/workflows/tag-generator.yml
+        uses: wagnerlduarte/releasy-action/.github/workflows/tag-generator.yml@main
         with:
           release: patch
           tag: beta
