@@ -1,0 +1,37 @@
+name: Reset Beta Branch and Tag
+
+on:
+  workflow_dispatch:
+
+jobs:
+  reset_and_tag:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: main
+
+      - name: Setup Git
+        uses: fregante/setup-git-user@v1
+
+      - name: Reset beta branch with main
+        run: |
+          git fetch origin
+          git checkout -B beta origin/main
+          git push origin beta --force
+
+      - name: Trigger manual_tag_release workflow
+        uses: peter-evans/workflow-dispatch@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          workflow: tag-generator.yml
+          ref: beta
+          inputs: |
+            release: patch
+            tag: beta
+            build_api: true
+            build_wrk: true
+            is_reset: true
