@@ -2,6 +2,7 @@ name: Tag Generator
 
 on:
   workflow_dispatch:
+  workflow_call:
     inputs:
       release:
         type: choice
