@@ -26,7 +26,7 @@ jobs:
 
   trigger_tag_generator:
     needs: reset_beta_branch
-    uses: wagnerlduarte/releasy-action/.github/workflows/tag-generator.yml@main
+    uses: ./.github/workflows/tag-generator.yml
     with:
       release: patch
       tag: beta
