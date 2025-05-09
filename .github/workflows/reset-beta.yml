@@ -4,8 +4,10 @@ on:
   workflow_dispatch:
 
 jobs:
-  reset_and_tag:
+  reset_beta_branch:
     runs-on: ubuntu-latest
+    outputs:
+      branch_reset_done: ${{ steps.done.outputs.status }}
 
     steps:
       - name: Checkout
@@ -22,11 +24,12 @@ jobs:
           git checkout -B beta origin/main
           git push origin beta --force
 
-      - name: Trigger tag generator workflow
-        uses: wagnerlduarte/releasy-action/.github/workflows/tag-generator.yml@main
-        with:
-          release: patch
-          tag: beta
-          build_api: true
-          build_wrk: true
-          is_reset: true
+  trigger_tag_generator:
+    needs: reset_beta_branch
+    uses: wagnerlduarte/releasy-action/.github/workflows/tag-generator.yml@main
+    with:
+      release: patch
+      tag: beta
+      build_api: true
+      build_wrk: true
+      is_reset: true
