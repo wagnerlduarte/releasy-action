@@ -75,12 +75,28 @@ jobs:
       - name: Get latest matching tag
         id: get_tag
         run: |
-          TAG_PATTERN="v[0-9]*.[0-9]*.[0-9]*"
-          if [ "$TAG_TYPE" = "beta" ]; then
-            TAG_PATTERN="${TAG_PATTERN}-beta*"
+          get_latest_tag() {
+            local type=$1
+            local tag_type=$2
+
+            TAG_PATTERN="v[0-9]*.[0-9]*.[0-9]*-${type}"
+            if [ "$tag_type" = "beta" ]; then
+              TAG_PATTERN="${TAG_PATTERN}-beta*"
+            fi
+
+            TAG=$(git tag --list "$TAG_PATTERN" | sort -V | tail -n 1)
+            [ -z "$TAG" ] && TAG="v0.0.0"
+            echo "$TAG"
+          }
+
+          if [ "$BUILD_WRK" = "true" ]; then
+            LAST_TAG=$(get_latest_tag "wrk" "$TAG_TYPE")
+          elif [ "$BUILD_API" = "true" ]; then
+            LAST_TAG=$(get_latest_tag "api" "$TAG_TYPE")
+          else
+            LAST_TAG="v0.0.0"
           fi
-          LAST_TAG=$(git tag --list "$TAG_PATTERN" | sort -V | tail -n 1)
-          [ -z "$LAST_TAG" ] && LAST_TAG="v0.0.0"
+
           echo "latest_tag=$LAST_TAG" >> $GITHUB_OUTPUT
 
       - name: Bump version
