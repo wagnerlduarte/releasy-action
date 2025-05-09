@@ -47,9 +47,21 @@ on:
         type: boolean
         default: false
 
+    outputs:
+      api_tag:
+        description: API tag generated
+        value: ${{ jobs.manual_tag_release.outputs.api_tag }}
+      wrk_tag:
+        description: Worker tag generated
+        value: ${{ jobs.manual_tag_release.outputs.wrk_tag }}
+
 jobs:
   manual_tag_release:
     runs-on: ubuntu-latest
+
+    outputs:
+      api_tag: ${{ steps.set_tags.outputs.api_tag }}
+      wrk_tag: ${{ steps.set_tags.outputs.wrk_tag }}
 
     env:
       RELEASE_TYPE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.release || inputs.release }}
@@ -115,19 +127,15 @@ jobs:
           NEW_VERSION=$(echo "$NEW_VERSION" | sed 's/^v//')
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
-      - name: Create tags for selected builds
+      - name: Create tags for selected builds and export outputs
+        id: set_tags
         run: |
           VERSION=${{ steps.bump_version.outputs.new_version }}
-          declare -a TARGETS=()
-          if [ "$BUILD_API" = "true" ]; then
-            TARGETS+=("api")
-          fi
-          if [ "$BUILD_WRK" = "true" ]; then
-            TARGETS+=("wrk")
-          fi
+          API_TAG=""
+          WRK_TAG=""
 
-          for BUILD in "${TARGETS[@]}"; do
-            TAG="v$VERSION-$BUILD"
+          if [ "$BUILD_API" = "true" ]; then
+            TAG="v$VERSION-api"
             if [ "$TAG_TYPE" = "beta" ]; then
               TAG="${TAG}-beta"
               if [ "$IS_RESET" = "true" ]; then
@@ -136,5 +144,23 @@ jobs:
             fi
             git tag "$TAG"
             git push origin "$TAG"
-            echo "Pushed tag: $TAG"
-          done
+            echo "API_TAG=$TAG"
+            API_TAG=$TAG
+          fi
+
+          if [ "$BUILD_WRK" = "true" ]; then
+            TAG="v$VERSION-wrk"
+            if [ "$TAG_TYPE" = "beta" ]; then
+              TAG="${TAG}-beta"
+              if [ "$IS_RESET" = "true" ]; then
+                TAG="${TAG}-reset"
+              fi
+            fi
+            git tag "$TAG"
+            git push origin "$TAG"
+            echo "WRK_TAG=$TAG"
+            WRK_TAG=$TAG
+          fi
+
+          echo "api_tag=$API_TAG" >> $GITHUB_OUTPUT
+          echo "wrk_tag=$WRK_TAG" >> $GITHUB_OUTPUT
