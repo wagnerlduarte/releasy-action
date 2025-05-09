@@ -22,16 +22,11 @@ jobs:
           git checkout -B beta origin/main
           git push origin beta --force
 
-      - name: Trigger manual_tag_release workflow
-        uses: peter-evans/workflow-dispatch@v1
+      - name: Trigger tag generator workflow
+        uses: ./.github/workflows/tag-generator.yml
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ github.repository }}
-          workflow: tag-generator.yml
-          ref: beta
-          inputs: |
-            release: patch
-            tag: beta
-            build_api: true
-            build_wrk: true
-            is_reset: true
+          release: patch
+          tag: beta
+          build_api: true
+          build_wrk: true
+          is_reset: true
