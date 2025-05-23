@@ -1,0 +1,109 @@
+name: Manual Tag and Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        type: choice
+        required: true
+        description: Release type (version bump)
+        options:
+          - patch
+          - minor
+          - major
+          - prerelease
+        default: patch
+
+      tag:
+        type: choice
+        required: true
+        description: Tag type
+        options:
+          - stable
+          - beta
+        default: beta
+
+      build_api:
+        type: boolean
+        required: false
+        description: Generate tag for API
+        default: true
+
+      build_wrk:
+        type: boolean
+        required: false
+        description: Generate tag for Worker
+        default: true
+
+jobs:
+  manual_tag_release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Git User
+        uses: fregante/setup-git-user@v1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.x
+
+      - name: Fetch all tags
+        run: git fetch --tags
+
+      - name: Get latest matching tag
+        id: get_tag
+        run: |
+          TAG_TYPE="${{ github.event.inputs.tag }}"
+          TAG_PATTERN="v[0-9]*.[0-9]*.[0-9]*"
+
+          if [ "$TAG_TYPE" = "beta" ]; then
+            TAG_PATTERN="${TAG_PATTERN}-beta*"
+          fi
+
+          LAST_TAG=$(git tag --list "$TAG_PATTERN" | sort -V | tail -n 1)
+          [ -z "$LAST_TAG" ] && LAST_TAG="v0.0.0"
+          echo "latest_tag=$LAST_TAG" >> $GITHUB_OUTPUT
+
+      - name: Bump version
+        id: bump_version
+        run: |
+          LATEST="${{ steps.get_tag.outputs.latest_tag }}"
+          RELEASE_TYPE="${{ github.event.inputs.release }}"
+
+          BASE_VERSION=$(echo "$LATEST" | sed 's/^v//' | sed 's/-.*//')
+          echo "{ \"version\": \"$BASE_VERSION\" }" > package.json
+
+          if [ "$RELEASE_TYPE" = "prerelease" ]; then
+            NEW_VERSION=$(npm version prerelease --preid=beta --no-git-tag-version)
+          else
+            NEW_VERSION=$(npm version $RELEASE_TYPE --no-git-tag-version)
+          fi
+
+          NEW_VERSION=$(echo "$NEW_VERSION" | sed 's/^v//')
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create tags for selected builds
+        run: |
+          VERSION=${{ steps.bump_version.outputs.new_version }}
+          TAG_TYPE=${{ github.event.inputs.tag }}
+
+          declare -a TARGETS=()
+          if [ "${{ github.event.inputs.build_api }}" == "true" ]; then
+            TARGETS+=("api")
+          fi
+          if [ "${{ github.event.inputs.build_wrk }}" == "true" ]; then
+            TARGETS+=("wrk")
+          fi
+
+          for BUILD in "${TARGETS[@]}"; do
+            TAG="v$VERSION-$BUILD"
+            if [ "$TAG_TYPE" = "beta" ]; then
+              TAG="${TAG}-beta"
+            fi
+            git tag "$TAG"
+            git push origin "$TAG"
+            echo "Pushed tag: $TAG"
+          done

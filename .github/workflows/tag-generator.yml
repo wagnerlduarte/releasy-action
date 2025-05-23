@@ -1,0 +1,166 @@
+name: Tag Generator
+
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        type: choice
+        required: true
+        description: Release type (version bump)
+        options: [patch, minor, major, prerelease]
+        default: patch
+      tag:
+        type: choice
+        required: true
+        description: Tag type
+        options: [stable, beta]
+        default: beta
+      build_api:
+        type: boolean
+        required: false
+        description: Generate tag for API
+        default: true
+      build_wrk:
+        type: boolean
+        required: false
+        description: Generate tag for Worker
+        default: true
+
+  workflow_call:
+    inputs:
+      release:
+        required: true
+        type: string
+      tag:
+        required: true
+        type: string
+      build_api:
+        required: false
+        type: boolean
+        default: true
+      build_wrk:
+        required: false
+        type: boolean
+        default: true
+      is_reset:
+        required: false
+        type: boolean
+        default: false
+
+    outputs:
+      api_tag:
+        description: API tag generated
+        value: ${{ jobs.manual_tag_release.outputs.api_tag }}
+      wrk_tag:
+        description: Worker tag generated
+        value: ${{ jobs.manual_tag_release.outputs.wrk_tag }}
+
+jobs:
+  manual_tag_release:
+    runs-on: ubuntu-latest
+
+    outputs:
+      api_tag: ${{ steps.set_tags.outputs.api_tag }}
+      wrk_tag: ${{ steps.set_tags.outputs.wrk_tag }}
+
+    env:
+      RELEASE_TYPE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.release || inputs.release }}
+      TAG_TYPE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || inputs.tag }}
+      BUILD_API: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build_api || inputs.build_api }}
+      BUILD_WRK: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build_wrk || inputs.build_wrk }}
+      IS_RESET: ${{ github.event_name == 'workflow_dispatch' && false || inputs.is_reset }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Git User
+        uses: fregante/setup-git-user@v1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.x
+
+      - name: Fetch all tags
+        run: git fetch --tags
+
+      - name: Get latest matching tag
+        id: get_tag
+        run: |
+          get_latest_tag() {
+            local type=$1
+            local tag_type=$2
+
+            TAG_PATTERN="v[0-9]*.[0-9]*.[0-9]*-${type}"
+            if [ "$tag_type" = "beta" ]; then
+              TAG_PATTERN="${TAG_PATTERN}-beta*"
+            fi
+
+            TAG=$(git tag --list "$TAG_PATTERN" | sort -V | tail -n 1)
+            [ -z "$TAG" ] && TAG="v0.0.0"
+            echo "$TAG"
+          }
+
+          if [ "$BUILD_WRK" = "true" ]; then
+            LAST_TAG=$(get_latest_tag "wrk" "$TAG_TYPE")
+          elif [ "$BUILD_API" = "true" ]; then
+            LAST_TAG=$(get_latest_tag "api" "$TAG_TYPE")
+          else
+            LAST_TAG="v0.0.0"
+          fi
+
+          echo "latest_tag=$LAST_TAG" >> $GITHUB_OUTPUT
+
+      - name: Bump version
+        id: bump_version
+        run: |
+          LATEST="${{ steps.get_tag.outputs.latest_tag }}"
+          BASE_VERSION=$(echo "$LATEST" | sed 's/^v//' | sed 's/-.*//')
+          echo "{ \"version\": \"$BASE_VERSION\" }" > package.json
+
+          if [ "$RELEASE_TYPE" = "prerelease" ]; then
+            NEW_VERSION=$(npm version prerelease --preid=beta --no-git-tag-version)
+          else
+            NEW_VERSION=$(npm version $RELEASE_TYPE --no-git-tag-version)
+          fi
+
+          NEW_VERSION=$(echo "$NEW_VERSION" | sed 's/^v//')
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create tags for selected builds and export outputs
+        id: set_tags
+        run: |
+          VERSION=${{ steps.bump_version.outputs.new_version }}
+          API_TAG=""
+          WRK_TAG=""
+
+          if [ "$BUILD_API" = "true" ]; then
+            TAG="v$VERSION-api"
+            if [ "$TAG_TYPE" = "beta" ]; then
+              TAG="${TAG}-beta"
+              if [ "$IS_RESET" = "true" ]; then
+                TAG="${TAG}-reset"
+              fi
+            fi
+            git tag "$TAG"
+            git push origin "$TAG"
+            echo "API_TAG=$TAG"
+            API_TAG=$TAG
+          fi
+
+          if [ "$BUILD_WRK" = "true" ]; then
+            TAG="v$VERSION-wrk"
+            if [ "$TAG_TYPE" = "beta" ]; then
+              TAG="${TAG}-beta"
+              if [ "$IS_RESET" = "true" ]; then
+                TAG="${TAG}-reset"
+              fi
+            fi
+            git tag "$TAG"
+            git push origin "$TAG"
+            echo "WRK_TAG=$TAG"
+            WRK_TAG=$TAG
+          fi
+
+          echo "api_tag=$API_TAG" >> $GITHUB_OUTPUT
+          echo "wrk_tag=$WRK_TAG" >> $GITHUB_OUTPUT
