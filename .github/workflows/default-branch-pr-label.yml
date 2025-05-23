@@ -2,7 +2,7 @@ name: 'PR Label Validator'
 
 on:
   pull_request:
-    types: 
+    types:
       - opened
       - labeled
       - unlabeled
@@ -10,12 +10,57 @@ on:
       - synchronize
 
 jobs:
+  create-labels:
+    if: |
+      github.event_name == 'pull_request' &&
+      github.event.action == 'opened' &&
+      github.event.pull_request.base.ref == github.event.repository.default_branch
+    name: 'Ensure Labels Exist'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create missing labels
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const labelsToCreate = [
+              { name: 'release:major', color: 'd73a4a', description: 'Major release' },
+              { name: 'release:minor', color: 'a2eeef', description: 'Minor release' },
+              { name: 'release:patch', color: '0e8a16', description: 'Patch release' },
+              { name: 'release:prerelease', color: 'cfd3d7', description: 'Prerelease version' },
+              { name: 'component:api', color: '5319e7', description: 'Affects API' },
+              { name: 'component:worker', color: 'fbca04', description: 'Affects Worker' },
+            ];
+
+            const existingLabels = await github.rest.issues.listLabelsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+
+            const existingNames = existingLabels.data.map(label => label.name);
+
+            for (const label of labelsToCreate) {
+              if (!existingNames.includes(label.name)) {
+                await github.rest.issues.createLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: label.name,
+                  color: label.color,
+                  description: label.description,
+                });
+                console.log(`✅ Created label: ${label.name}`);
+              } else {
+                console.log(`ℹ️ Label already exists: ${label.name}`);
+              }
+            }
+
   validate-labels:
     name: 'Validate PR Labels'
     runs-on: ubuntu-latest
     if: github.event.pull_request.base.ref == github.event.repository.default_branch
     steps:
-      - uses: actions/github-script@v7
+      - name: Validate PR Labels
+        uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -26,20 +71,20 @@ jobs:
             });
 
             const labels = prLabels.data.map(label => label.name);
-            
+
             const versionLabels = ['release:major', 'release:minor', 'release:patch', 'release:prerelease'];
             const componentLabels = ['component:api', 'component:worker'];
 
-            const versions = labels.filter(label => versionLabels.includes(label));
-            const components = labels.filter(label => componentLabels.includes(label));
+            const selectedVersions = labels.filter(label => versionLabels.includes(label));
+            const selectedComponents = labels.filter(label => componentLabels.includes(label));
 
-            if (versions.length !== 1) {
+            if (selectedVersions.length !== 1) {
               core.setFailed(`❌ You must apply exactly **one** version label: ${versionLabels.join(', ')}`);
             }
 
-            if (components.length === 0) {
+            if (selectedComponents.length === 0) {
               core.setFailed(`❌ At least **one** component label is required: ${componentLabels.join(', ')}`);
             }
 
-            console.log(`✅ Version labels: ${versions.join(', ')}`);
-            console.log(`✅ Component labels: ${components.join(', ')}`);
+            console.log(`✅ Version labels: ${selectedVersions}`);
+            console.log(`✅ Component labels: ${selectedComponents}`);
