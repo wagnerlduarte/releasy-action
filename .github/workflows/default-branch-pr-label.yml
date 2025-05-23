@@ -30,16 +30,16 @@ jobs:
             const versionLabels = ['release:major', 'release:minor', 'release:patch', 'release:prerelease'];
             const componentLabels = ['component:api', 'component:worker'];
 
-            const versionCount = labels.filter(label => versionLabels.includes(label)).length;
-            const componentCount = labels.filter(label => componentLabels.includes(label)).length;
+            const versions = labels.filter(label => versionLabels.includes(label));
+            const components = labels.filter(label => componentLabels.includes(label));
 
             if (versions.length !== 1) {
               core.setFailed(`❌ You must apply exactly **one** version label: ${versionLabels.join(', ')}`);
             }
-            
+
             if (components.length === 0) {
               core.setFailed(`❌ At least **one** component label is required: ${componentLabels.join(', ')}`);
             }
-            
-            console.log(`✅ Version labels: ${versions}`);
-            console.log(`✅ Component labels: ${components}`);
+
+            console.log(`✅ Version labels: ${versions.join(', ')}`);
+            console.log(`✅ Component labels: ${components.join(', ')}`);
