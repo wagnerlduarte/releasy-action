@@ -1,0 +1,30 @@
+name: 'PR Label Instructions'
+
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  comment-instructions:
+    name: 'Comment PR Label Instructions'
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.base.ref == github.event.repository.default_branch
+    steps:
+      - uses: mshick/add-pr-comment@v1
+        with:
+          message: |
+            👋 Hello! To proceed with the release process, please add the following labels to this pull request:
+          
+            ✅ **Version** (choose exactly one):
+            - `major`
+            - `minor`
+            - `patch`
+            - `prerelease`
+          
+            ✅ **Component** (choose one or both):
+            - `api`
+            - `worker`
+          
+            ---
+            > ❗ Release workflows will only run if these label conditions are met.
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
