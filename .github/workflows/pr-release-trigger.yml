@@ -20,27 +20,41 @@ jobs:
           script: |
             const pr = context.payload.pull_request;
             const labels = pr.labels.map(label => label.name);
-
+  
             const versionMap = {
               'release:patch': 'patch',
               'release:minor': 'minor',
               'release:major': 'major',
               'release:prerelease': 'prerelease',
             };
-
-            const componentLabels = {
-              'component:api': true,
-              'component:worker': true
-            };
-
-            const version = labels.find(label => Object.keys(versionMap).includes(label));
-            const build_api = labels.includes('component:api');
-            const build_wrk = labels.includes('component:worker');
-
-            if (!version) {
-              core.setFailed('No release version label found.');
+  
+            const componentLabels = ['component:api', 'component:worker'];
+  
+            const selectedVersions = labels.filter(label => Object.keys(versionMap).includes(label));
+            const selectedComponents = labels.filter(label => componentLabels.includes(label));
+  
+            const versionCount = selectedVersions.length;
+            const componentCount = selectedComponents.length;
+  
+            if (versionCount === 0 && componentCount === 0) {
+              console.log('ℹ️ No release or component labels selected — skipping release trigger.');
+              return;
             }
-
+  
+            if (versionCount !== 1) {
+              core.setFailed(`❌ You must apply exactly **one** version label when triggering a release.`);
+              return;
+            }
+  
+            if (componentCount === 0) {
+              core.setFailed(`❌ At least **one** component label is required when a release label is selected.`);
+              return;
+            }
+  
+            const version = selectedVersions[0];
+            const build_api = selectedComponents.includes('component:api');
+            const build_wrk = selectedComponents.includes('component:worker');
+  
             core.setOutput('release', versionMap[version]);
             core.setOutput('build_api', build_api);
             core.setOutput('build_wrk', build_wrk);
