@@ -78,6 +78,11 @@ jobs:
             const selectedVersions = labels.filter(label => versionLabels.includes(label));
             const selectedComponents = labels.filter(label => componentLabels.includes(label));
 
+            if (versionCount === 0 && componentCount === 0) {
+              console.log('ℹ️ No release or component labels selected — skipping validation.');
+              return;
+            }
+
             if (selectedVersions.length !== 1) {
               core.setFailed(`❌ You must apply exactly **one** version label: ${versionLabels.join(', ')}`);
             }
