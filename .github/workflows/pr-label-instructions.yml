@@ -16,14 +16,14 @@ jobs:
             👋 Hello! To proceed with the release process, please add the following labels to this pull request:
           
             ✅ **Version** (choose exactly one):
-            - `major`
-            - `minor`
-            - `patch`
-            - `prerelease`
+            - `release:major`
+            - `release:minor`
+            - `release:patch`
+            - `release:prerelease`
           
             ✅ **Component** (choose one or both):
-            - `api`
-            - `worker`
+            - `component:api`
+            - `component:worker`
           
             ---
             > ❗ Release workflows will only run if these label conditions are met.
