@@ -85,10 +85,12 @@ jobs:
 
             if (selectedVersions.length !== 1) {
               core.setFailed(`❌ You must apply exactly **one** version label: ${versionLabels.join(', ')}`);
+              return;
             }
 
             if (selectedComponents.length === 0) {
               core.setFailed(`❌ At least **one** component label is required: ${componentLabels.join(', ')}`);
+              return;
             }
 
             console.log(`✅ Version labels: ${selectedVersions}`);
