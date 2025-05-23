@@ -1,0 +1,63 @@
+name: Trigger Release on Merge
+
+on:
+  pull_request:
+    types:
+      - closed
+
+jobs:
+  trigger-release:
+    if: |
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get labels
+        id: get-labels
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            const labels = pr.labels.map(label => label.name);
+
+            const versionMap = {
+              'release:patch': 'patch',
+              'release:minor': 'minor',
+              'release:major': 'major',
+              'release:prerelease': 'prerelease',
+            };
+
+            const componentLabels = {
+              'component:api': true,
+              'component:worker': true
+            };
+
+            const version = labels.find(label => Object.keys(versionMap).includes(label));
+            const build_api = labels.includes('component:api');
+            const build_wrk = labels.includes('component:worker');
+
+            if (!version) {
+              core.setFailed('No release version label found.');
+            }
+
+            core.setOutput('release', versionMap[version]);
+            core.setOutput('build_api', build_api);
+            core.setOutput('build_wrk', build_wrk);
+
+      - name: Dispatch Release Workflow
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'release.yml',
+              ref: context.payload.pull_request.base.ref,
+              inputs: {
+                release: '${{ steps.get-labels.outputs.release }}',
+                build_api: '${{ steps.get-labels.outputs.build_api }}',
+                build_wrk: '${{ steps.get-labels.outputs.build_wrk }}'
+              }
+            });
