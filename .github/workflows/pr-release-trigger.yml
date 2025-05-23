@@ -67,7 +67,7 @@ jobs:
             await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              workflow_id: 'release.yml',
+              workflow_id: 'create-release-notes.yml',
               ref: context.payload.pull_request.base.ref,
               inputs: {
                 release: '${{ steps.get-labels.outputs.release }}',
