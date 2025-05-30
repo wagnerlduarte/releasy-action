@@ -38,6 +38,7 @@ jobs:
   
             if (versionCount === 0 && componentCount === 0) {
               console.log('ℹ️ No release or component labels selected — skipping release trigger.');
+              core.setOutput('should_dispatch', 'false');
               return;
             }
   
@@ -59,7 +60,10 @@ jobs:
             core.setOutput('build_api', build_api);
             core.setOutput('build_wrk', build_wrk);
 
+            core.setOutput('should_dispatch', 'true');
+
       - name: Dispatch Release Workflow
+        if: steps.get-labels.outputs.should_dispatch == 'true'
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
